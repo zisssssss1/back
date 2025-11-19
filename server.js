@@ -16,7 +16,28 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: function (origin, callback) {
+    // 允许没有origin的请求（如Postman、curl等）
+    if (!origin) return callback(null, true);
+
+    // 允许所有 vercel.app 域名
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // 允许配置的前端URL
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    // 开发环境允许localhost
+    if (origin.includes('localhost')) {
+      return callback(null, true);
+    }
+
+    // 其他情况拒绝
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json());
